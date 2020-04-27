@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: es-reporting-create
+  namespace: mytardis
+spec:
+  backoffLimit: 1
+  completions: 1
+  parallelism: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: go
+        image: mytardis/es-reporting:latest
+        imagePullPolicy: Always
+        command:
+          - python
+          - index.py
+          - --rebuild
+          - --days=-1
+        volumeMounts:
+        - name: settings
+          mountPath: /app/settings.yaml
+          subPath: settings.yaml
+      volumes:
+      - name: settings
+        configMap:
+          name: es-reporting

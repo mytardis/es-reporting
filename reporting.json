@@ -1,0 +1,109 @@
+{
+	"settings": {
+		"index": {
+			"refresh_interval": "15s",
+			"number_of_shards": "3",
+			"number_of_replicas": "1"
+		}
+	},
+	"mappings": {
+		"properties": {
+			"dfo_id": {
+				"type": "long"
+			},
+			"created_time": {
+				"type": "date"
+			},
+			"uploaded_time": {
+				"type": "date"
+			},
+			"file_size": {
+				"type": "long"
+			},
+			"dataset_id": {
+				"type": "long"
+			},
+			"dataset_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
+			"experiment_id": {
+				"type": "long"
+			},
+			"experiment_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
+			"facility_id": {
+				"type": "long"
+			},
+			"facility_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
+			"instrument_id": {
+				"type": "long"
+			},
+			"instrument_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
+			"storagebox_id": {
+				"type": "long"
+			},
+			"storagebox_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
+			"uploader_id": {
+				"type": "long"
+			},
+			"uploader_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
+			"user_id": {
+				"type": "long"
+			},
+			"user_name": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			}
+		}
+	}
+}

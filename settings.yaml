@@ -1,0 +1,15 @@
+database:
+  host: localhost
+  port: 5432
+  username: user
+  password: pass
+  database: postgres
+
+elasticsearch:
+  host: localhost
+  port: 9200
+
+index:
+  name: reporting
+  limit: 1000
+
