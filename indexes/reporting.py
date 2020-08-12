@@ -141,12 +141,38 @@ def get_extras(cur, dataset_ids):
     return data
 
 
+def transform_data(start, rows, cur, cache):
+
+    dataset_ids = list(set([row["dataset_id"] for row in rows]))
+    extra_ds_ids = []
+
+    for ds_id in dataset_ids:
+        if ds_id not in cache:
+            extra_ds_ids.append(ds_id)
+
+    if len(extra_ds_ids) != 0:
+        extras = get_extras(cur, extra_ds_ids)
+        for k in extras:
+            cache[k] = extras[k]
+
+    data = []
+    for row in rows:
+        if row["dfo_id"] > start:
+            start = row["dfo_id"]
+        ds_id = row["dataset_id"]
+        if ds_id in cache:
+            data.append({**row, **cache[ds_id]})
+        else:
+            data.append(row)
+
+    return data, start
+
+
 def data_to_es(index_name, data):
 
     for item in data:
         yield {
             '_index': index_name,
-            '_type': '_doc',
             '_id': item["dfo_id"],
             '_source': item
         }

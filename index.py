@@ -1,5 +1,6 @@
 import sys
 import argparse
+import importlib
 import os
 import yaml
 import json
@@ -8,13 +9,57 @@ from psycopg2 import connect
 from psycopg2.extras import RealDictCursor
 from elasticsearch import Elasticsearch, helpers
 
-from reporting import count_from_db, data_from_db, get_extras, data_to_es
+
+def get_parser():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--config",
+        default="settings.yaml",
+        help="Config file location (default: settings.yaml)."
+    )
+
+    parser.add_argument(
+        "--index",
+        default="*",
+        help="Index name (default: *)."
+    )
+
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=1,
+        help="Populate past days of data."
+    )
+
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="Delete and create index."
+    )
+
+    return parser
 
 
-def init_es_index(index_name):
+def get_indexes(indexes_folder):
+    files = []
+    for file in os.listdir(indexes_folder):
+        if file.endswith(".py"):
+            files.append(file.replace(".py", ""))
+    return files
 
-    with open("{}.json".format(index_name)) as f:
-        config = json.load(f)
+
+def init_es_index(indexes_folder, index_name):
+
+    index_settings_file = os.path.join(
+        indexes_folder, "{}.json".format(index_name))
+
+    if os.path.exists(index_settings_file):
+        with open(index_settings_file) as file:
+            config = json.load(file)
+    else:
+        config = None
 
     es.indices.delete(
         index=index_name,
@@ -27,25 +72,7 @@ def init_es_index(index_name):
     )
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--config",
-    default="settings.yaml",
-    help="Config file location."
-)
-parser.add_argument(
-    "--days",
-    type=int,
-    default=1,
-    help="Populate past days of data."
-)
-parser.add_argument(
-    "--rebuild",
-    action="store_true",
-    help="Delete and create index."
-)
-
-args = parser.parse_args()
+args = get_parser().parse_args()
 
 if os.path.isfile(args.config):
     with open(args.config) as f:
@@ -61,8 +88,8 @@ try:
         password=settings["database"]["password"],
         database=settings["database"]["database"]
     )
-except Exception:
-    sys.exit("Can't connect to the database.")
+except Exception as e:
+    sys.exit("Can't connect to the database - {}.".format(str(e)))
 
 try:
     es_host = "{}:{}".format(
@@ -70,53 +97,53 @@ try:
         settings["elasticsearch"]["port"]
     )
     es = Elasticsearch([es_host])
-except Exception:
+except Exception as e:
     con.close()
-    sys.exit("Can't connect to the Elasticsearch.")
+    sys.exit("Can't connect to the Elasticsearch - {}.".format(str(e)))
 
 cur = con.cursor(cursor_factory=RealDictCursor)
 
-if args.rebuild:
-    print("Rebuild index.")
-    init_es_index(settings["index"]["name"])
+indexes_folder_name = "indexes"
+indexes_folder = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    indexes_folder_name)
 
-start = 0
-to_go = 1
-cache = {}
+if args.index == "*":
+    indexes = get_indexes(indexes_folder)
+else:
+    indexes = [args.index]
 
-while to_go > 0:
+for index in indexes:
 
-    to_go = count_from_db(cur, args.days, start)
-    print(
-        "{:,} datafileobjects to index, {:,} datasets cached"
-        .format(to_go, len(cache))
-    )
+    print("Index: {}.".format(index))
 
-    if to_go > 0:
+    cfg = settings["index"][index]
+    index_name = cfg["name"]
+    batch = cfg["limit"]
 
-        rows = data_from_db(cur, args.days, start, settings["index"]["limit"])
+    try:
+        idx = importlib.import_module(
+            "{}.{}".format(indexes_folder_name, index))
+    except Exception as e:
+        cur.close()
+        con.close()
+        sys.exit("Can't import module {} - {}.".format(index, str(e)))
 
-        dataset_ids = list(set([row["dataset_id"] for row in rows]))
-        extra_ds_ids = []
-        for ds_id in dataset_ids:
-            if ds_id not in cache:
-                extra_ds_ids.append(ds_id)
-        if len(extra_ds_ids) != 0:
-            extras = get_extras(cur, extra_ds_ids)
-            for k in extras:
-                cache[k] = extras[k]
+    if args.rebuild:
+        print("Rebuild index.")
+        init_es_index(indexes_folder, index)
 
-        data = []
-        for row in rows:
-            if row["dfo_id"] > start:
-                start = row["dfo_id"]
-            ds_id = row["dataset_id"]
-            if ds_id in cache:
-                data.append({**row, **cache[ds_id]})
-            else:
-                data.append(row)
+    start = 0
+    to_go = 1
+    cache = {}
 
-        helpers.bulk(es, data_to_es(settings["index"]["name"], data))
+    while to_go > 0:
+        to_go = idx.count_from_db(cur, args.days, start)
+        if to_go > 0:
+            print("{:,} rows to index (cache={:,})".format(to_go, len(cache)))
+            rows = idx.data_from_db(cur, args.days, start, batch)
+            data, start = idx.transform_data(start, rows, cur=cur, cache=cache)
+            helpers.bulk(es, idx.data_to_es(index_name, data))
 
 print("Completed.")
 cur.close()

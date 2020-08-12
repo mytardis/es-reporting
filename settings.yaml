@@ -2,7 +2,7 @@ database:
   host: localhost
   port: 5432
   username: user
-  password: pass
+  password: password
   database: postgres
 
 elasticsearch:
@@ -10,6 +10,12 @@ elasticsearch:
   port: 9200
 
 index:
-  name: reporting
-  limit: 1000
-
+  reporting:
+    name: reporting
+    limit: 1000
+  ua_user_login_success:
+    name: ua_user_login_success
+    limit: 1000
+  ua_user_login_failure:
+    name: ua_user_login_failure
+    limit: 1000

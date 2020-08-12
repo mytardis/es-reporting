@@ -13,11 +13,12 @@ You must specify credentials to the database and location of Elasticsearch serve
 Run from command line:
 
 ```
-python index.py [--config CONFIG] [--days DAYS] [--rebuild]
+python index.py [-h] [--config CONFIG] [--index INDEX] [--days DAYS] [--rebuild]
 
 optional arguments:
   --config CONFIG  Config file location.
-  --days DAYS      Populate past DAYS of data only, default is -1 to index all data.
+  --index INDEX    Index name to populate, default is * to include all indexes.
+  --days DAYS      Populate only data for a number of past days, default is -1 to index all data.
   --rebuild        Delete and create index.
 ```
 
