@@ -109,41 +109,42 @@ indexes_folder = os.path.join(
     indexes_folder_name)
 
 if args.index == "*":
-    indexes = get_indexes(indexes_folder)
+    indexes = list(settings["indexes"].keys())
 else:
     indexes = [args.index]
 
-for index in indexes:
+for index_name in indexes:
 
-    print("Index: {}.".format(index))
+    print("Index: {}.".format(index_name))
 
-    cfg = settings["index"][index]
-    index_name = cfg["name"]
+    cfg = settings["indexes"][index_name]
     batch = cfg["limit"]
 
     try:
-        idx = importlib.import_module(
-            "{}.{}".format(indexes_folder_name, index))
+        module = importlib.import_module(
+            "{}.{}".format(indexes_folder_name, cfg["module"]))
     except Exception as e:
         cur.close()
         con.close()
-        sys.exit("Can't import module {} - {}.".format(index, str(e)))
+        sys.exit("Can't import module {} - {}.".format(index_name, str(e)))
 
     if args.rebuild:
         print("Rebuild index.")
-        init_es_index(indexes_folder, index)
+        init_es_index(indexes_folder, index_name)
 
     start = 0
     to_go = 1
     cache = {}
 
+    cls = module.ReportingIndex(cur, index_name)
+
     while to_go > 0:
-        to_go = idx.count_from_db(cur, args.days, start)
+        to_go = cls.count_from_db(args.days, start)
         if to_go > 0:
             print("{:,} rows to index (cache={:,})".format(to_go, len(cache)))
-            rows = idx.data_from_db(cur, args.days, start, batch)
-            data, start = idx.transform_data(start, rows, cur=cur, cache=cache)
-            helpers.bulk(es, idx.data_to_es(index_name, data))
+            rows = cls.data_from_db(args.days, start, batch)
+            data, start = cls.transform_data(start, rows, cache=cache)
+            helpers.bulk(es, cls.data_to_es(data))
 
 print("Completed.")
 cur.close()

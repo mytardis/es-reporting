@@ -9,13 +9,28 @@ elasticsearch:
   host: localhost
   port: 9200
 
-index:
+indexes:
   reporting:
-    name: reporting
+    module: reporting
     limit: 1000
   ua_user_login_success:
-    name: ua_user_login_success
+    module: ua_user_login_success
     limit: 1000
   ua_user_login_failure:
-    name: ua_user_login_failure
+    module: ua_user_login_failure
+    limit: 1000
+  ua_pageview_dataset:
+    module: ua_pageview_dataset
+    limit: 1000
+  ua_download_datafile:
+    module: ua_download_datafile
+    limit: 1000
+  ua_upload_datafile:
+    module: ua_upload_datafile
+    limit: 1000
+  ua_pushto:
+    module: ua_push_to
+    limit: 1000
+  ua_search:
+    module: ua_search
     limit: 1000
