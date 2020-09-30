@@ -134,16 +134,15 @@ for index_name in indexes:
 
     start = 0
     to_go = 1
-    cache = {}
 
     cls = module.ReportingIndex(cur, index_name)
 
     while to_go > 0:
         to_go = cls.count_from_db(args.days, start)
         if to_go > 0:
-            print("{:,} rows to index (cache={:,})".format(to_go, len(cache)))
+            print("{:,} rows to index (cache={:,})".format(to_go, len(cls.cache)))
             rows = cls.data_from_db(args.days, start, batch)
-            data, start = cls.transform_data(start, rows, cache=cache)
+            data, start = cls.transform_data(start, rows)
             helpers.bulk(es, cls.data_to_es(data))
 
 print("Completed.")

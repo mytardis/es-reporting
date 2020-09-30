@@ -141,27 +141,27 @@ class ReportingIndex(BaseReportingIndex):
 
         return rows
 
-    def transform_data(self, start, rows, cache):
+    def transform_data(self, start, rows):
 
         dataset_ids = list(set([row["dataset_id"] for row in rows]))
         extra_ds_ids = []
 
         for ds_id in dataset_ids:
-            if ds_id not in cache:
+            if ds_id not in self.cache:
                 extra_ds_ids.append(ds_id)
 
         if len(extra_ds_ids) != 0:
             extras = self.get_extras(extra_ds_ids)
             for k in extras:
-                cache[k] = extras[k]
+                self.cache[k] = extras[k]
 
         data = []
         for row in rows:
             if row["dfo_id"] > start:
                 start = row["dfo_id"]
             ds_id = row["dataset_id"]
-            if ds_id in cache:
-                data.append({**row, **cache[ds_id]})
+            if ds_id in self.cache:
+                data.append({**row, **self.cache[ds_id]})
             else:
                 data.append(row)
 
