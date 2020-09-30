@@ -26,10 +26,11 @@ class ReportingIndex(UserActionIndex):
                 start = row["log_id"]
             extra = row["extra"]
             del(row["extra"])
-            data.append({**row, **extra})
-            ds_id = extra["id"]
+            ds_id = int(extra["id"])
             if ds_id in self.cache:
-                data.append({**row, **self.cache[ds_id]})
+                extra = {**extra, **self.cache[ds_id]}
+                del (extra["id"])
+            data.append({**row, **extra})
 
         return data, start
 
