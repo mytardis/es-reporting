@@ -20,6 +20,15 @@
 			"file_size": {
 				"type": "long"
 			},
+			"file_extension": {
+				"type": "text",
+				"fields": {
+					"keyword": {
+						"type": "keyword",
+						"ignore_above": 256
+					}
+				}
+			},
 			"dataset_id": {
 				"type": "long"
 			},

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from psycopg2 import sql
 
@@ -103,6 +104,7 @@ class ReportingIndex(BaseReportingIndex):
                 dfo.created_time as uploaded_time,
                 df.created_time as created_time,
                 df.size as file_size,
+                df.filename as file_name,
                 sb.id as storagebox_id,
                 sb.description as storagebox_name,
                 ds.id as dataset_id,
@@ -160,6 +162,8 @@ class ReportingIndex(BaseReportingIndex):
             if row["dfo_id"] > start:
                 start = row["dfo_id"]
             ds_id = row["dataset_id"]
+            _, row["file_extension"] = os.path.splitext(row["file_name"])
+            del(row["file_name"])
             if ds_id in self.cache:
                 data.append({**row, **self.cache[ds_id]})
             else:
