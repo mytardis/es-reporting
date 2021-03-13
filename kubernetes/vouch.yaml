@@ -1,0 +1,38 @@
+replicaCount: 1
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - vouch.mytardis.com
+  paths:
+    - /
+
+config:
+  vouch:
+    domains:
+      - vouch.mytardis.com
+    allowAllUsers: false
+    whiteList:
+      - john.smith@mytardis.com
+    cookie:
+      name: vouchCookie
+      domain: kibana.mytardis.com
+      secure: true
+      httpOnly: true
+      maxAge: 14400
+    jwt:
+      issuer: Vouch
+      maxAge: 240
+      compress: true
+    session:
+      name: vouchSession
+  oauth:
+    provider: google
+    client_id: CLIENT_ID.apps.googleusercontent.com
+    client_secret: CLIENT_SECRET
+    callback_urls:
+      - https://vouch.mytardis.com/auth
+    scopes:
+      - email

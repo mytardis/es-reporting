@@ -35,3 +35,13 @@ rm auth.txt
 Secondly, deploy ingress with annotation to use secret:
 
 `kubectl create -f ingress.yaml`
+
+### Vouch
+
+Vouch proxy will allow you to restrict access to Kibana instance using number of oAuth providers, like Google, Okta, etc.
+
+`helm repo add halkeye https://halkeye.github.io/helm-charts/`
+
+`helm install halkeye/vouch --version 0.2.1 -f vouch.yaml --namespace ingress-nginx --name vouch`
+
+`helm del --purge vouch`
