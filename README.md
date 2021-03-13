@@ -24,6 +24,6 @@ optional arguments:
 
 ### Docker and Kubernetes
 
-We build automatically latest version of Docker image and publish it on DockerHub with mytardis/es-reporting:latest image name.
+We build automatically the latest version of Docker image and publish it on DockerHub with [mytardis/es-reporting:latest](https://hub.docker.com/r/mytardis/es-reporting) image name.
 
 Sample files in [kubernetes](./kubernetes/) folder will provide you with example of running this tool in Kubernetes.
