@@ -34,3 +34,6 @@ indexes:
   ua_search:
     module: ua_search
     limit: 1000
+  ua_recall:
+    module: ua_recall
+    limit: 1000
