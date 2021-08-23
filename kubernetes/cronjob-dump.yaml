@@ -1,0 +1,33 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: es-reporting-update
+  namespace: mytardis
+spec:
+  schedule: "30 0 * * 0"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: go
+            image: mytardis/es-reporting:latest
+            imagePullPolicy: Always
+            command:
+              - python
+              - index.py
+              - --dump
+            volumeMounts:
+            - name: settings
+              mountPath: /app/settings.yaml
+              subPath: settings.yaml
+            - name: data
+              mountPath: /mnt/data
+          volumes:
+            - name: settings
+              configMap:
+                name: es-reporting
+            - name: data
+              persistentVolumeClaim:
+                claimName: data-backup

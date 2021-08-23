@@ -19,3 +19,7 @@ data:
     index:
       name: reporting
       limit: 10000
+
+    dumpe:
+      path: /mnt/data
+      keep: 14
