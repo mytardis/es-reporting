@@ -1,7 +1,7 @@
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: es-reporting-update
+  name: es-reporting-dump
   namespace: mytardis
 spec:
   schedule: "30 0 * * 0"
