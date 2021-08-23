@@ -48,6 +48,12 @@ def get_parser():
         help="Dump data from the database to CSV file."
     )
 
+    parser.add_argument(
+        "--flush",
+        action="store_true",
+        help="Flush database after data dump."
+    )
+
     return parser
 
 
@@ -81,7 +87,7 @@ def init_es_index(indexes_folder, index_name):
     )
 
 
-def dump_data(connection, cursor):
+def dump_data(connection, cursor, is_flush):
     days = int(settings["dump"]["keep"])
     data_path = settings["dump"]["path"]
     if not os.path.exists(data_path):
@@ -119,13 +125,14 @@ def dump_data(connection, cursor):
         os.remove(abs_filename)
     else:
         print("Exported {} records.".format(t))
-        print("Flushing database...")
-        q = sql.SQL("""
-            DELETE FROM eventlog_log
-            WHERE timestamp < NOW() - INTERVAL '%s DAY'
-        """)
-        cursor.execute(q, [days])
-        connection.commit()
+        if is_flush:
+            print("Flushing database...")
+            q = sql.SQL("""
+                DELETE FROM eventlog_log
+                WHERE timestamp < NOW() - INTERVAL '%s DAY'
+            """)
+            cursor.execute(q, [days])
+            connection.commit()
     cursor.close()
     connection.close()
     print("Completed.")
@@ -153,7 +160,7 @@ except Exception as e:
 cur = con.cursor(cursor_factory=RealDictCursor)
 
 if args.dump:
-    dump_data(con, cur)
+    dump_data(con, cur, args.flush)
     sys.exit(0)
 
 try:
