@@ -4,8 +4,11 @@ import importlib
 import os
 import yaml
 import json
+from datetime import datetime
+from random import randint
+import pandas as pd
 
-from psycopg2 import connect
+from psycopg2 import connect, sql
 from psycopg2.extras import RealDictCursor
 from elasticsearch import Elasticsearch, helpers
 
@@ -37,6 +40,12 @@ def get_parser():
         "--rebuild",
         action="store_true",
         help="Delete and create index."
+    )
+
+    parser.add_argument(
+        "--dump",
+        action="store_true",
+        help="Dump data from the database to CSV file."
     )
 
     return parser
@@ -72,6 +81,56 @@ def init_es_index(indexes_folder, index_name):
     )
 
 
+def dump_data(connection, cursor):
+    days = int(settings["dump"]["keep"])
+    data_path = settings["dump"]["path"]
+    if not os.path.exists(data_path):
+        connection.close()
+        sys.exit("Can't find folder to dump data to - {}.".format(data_path))
+
+    today = datetime.now().strftime("%Y%m%d")
+    file_name = "eventlog_{}.csv".format(today)
+    while True:
+        abs_filename = os.path.join(data_path, file_name)
+        if not os.path.exists(abs_filename):
+            break
+        else:
+            file_name = "eventlog_{}_{:02d}.csv".format(today, randint(1, 99))
+    print("File: {}".format(file_name))
+    print("Dumping data...")
+    q = sql.SQL("""
+        SELECT * FROM eventlog_log
+        WHERE timestamp < NOW() - INTERVAL '%s DAY'
+        ORDER BY id ASC
+    """)
+    cursor.execute(q, [days])
+    f = open(abs_filename, "w")
+    t = 0
+    while True:
+        df = pd.DataFrame(cursor.fetchmany(1000))
+        if len(df) == 0:
+            break
+        else:
+            df.to_csv(f, index=False, header=(f.tell() == 0), encoding="utf-8")
+            t += len(df)
+    f.close()
+    if t == 0:
+        print("No data found, deleting file.")
+        os.remove(abs_filename)
+    else:
+        print("Exported {} records.".format(t))
+        print("Flushing database...")
+        q = sql.SQL("""
+            DELETE FROM eventlog_log
+            WHERE timestamp < NOW() - INTERVAL '%s DAY'
+        """)
+        cursor.execute(q, [days])
+        connection.commit()
+    cursor.close()
+    connection.close()
+    print("Completed.")
+
+
 args = get_parser().parse_args()
 
 if os.path.isfile(args.config):
@@ -91,6 +150,12 @@ try:
 except Exception as e:
     sys.exit("Can't connect to the database - {}.".format(str(e)))
 
+cur = con.cursor(cursor_factory=RealDictCursor)
+
+if args.dump:
+    dump_data(con, cur)
+    sys.exit(0)
+
 try:
     es_host = "{}:{}".format(
         settings["elasticsearch"]["host"],
@@ -100,8 +165,6 @@ try:
 except Exception as e:
     con.close()
     sys.exit("Can't connect to the Elasticsearch - {}.".format(str(e)))
-
-cur = con.cursor(cursor_factory=RealDictCursor)
 
 indexes_folder_name = "indexes"
 indexes_folder = os.path.join(
@@ -140,7 +203,8 @@ for index_name in indexes:
     while to_go > 0:
         to_go = cls.count_from_db(args.days, start)
         if to_go > 0:
-            print("{:,} rows to index (cache={:,})".format(to_go, len(cls.cache)))
+            print("{:,} rows to index (cache={:,})".format(
+                to_go, len(cls.cache)))
             rows = cls.data_from_db(args.days, start, batch)
             data, start = cls.transform_data(start, rows)
             helpers.bulk(es, cls.data_to_es(data))

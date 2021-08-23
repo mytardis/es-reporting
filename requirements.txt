@@ -1,4 +1,5 @@
 pyyaml
 psycopg2
 elasticsearch
+pandas
 flake8

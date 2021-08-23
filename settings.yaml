@@ -37,3 +37,7 @@ indexes:
   ua_recall:
     module: ua_recall
     limit: 1000
+
+dump:
+  path: ./data
+  keep: 14  # days
