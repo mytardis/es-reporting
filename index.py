@@ -11,6 +11,7 @@ import pandas as pd
 from psycopg2 import connect, sql
 from psycopg2.extras import RealDictCursor
 from elasticsearch import Elasticsearch, helpers
+from zipfile import ZipFile
 
 
 def get_parser():
@@ -46,6 +47,12 @@ def get_parser():
         "--dump",
         action="store_true",
         help="Dump data from the database to CSV file."
+    )
+
+    parser.add_argument(
+        "--zip",
+        action="store_true",
+        help="Compress exported data."
     )
 
     parser.add_argument(
@@ -87,21 +94,26 @@ def init_es_index(indexes_folder, index_name):
     )
 
 
-def dump_data(connection, cursor, is_flush):
+def get_file_name(path, ext):
+    today = datetime.now().strftime("%Y%m%d")
+    file_name = "eventlog_{}.{}".format(today, ext)
+    while True:
+        abs_file_name = os.path.join(path, file_name)
+        if not os.path.exists(abs_file_name):
+            return abs_file_name, file_name
+        else:
+            file_name = "eventlog_{}_{:02d}.{}".format(today, randint(1, 99),
+                                                       ext)
+
+
+def dump_data(connection, cursor, is_zip, is_flush):
     days = int(settings["dump"]["keep"])
     data_path = settings["dump"]["path"]
     if not os.path.exists(data_path):
         connection.close()
         sys.exit("Can't find folder to dump data to - {}.".format(data_path))
 
-    today = datetime.now().strftime("%Y%m%d")
-    file_name = "eventlog_{}.csv".format(today)
-    while True:
-        abs_filename = os.path.join(data_path, file_name)
-        if not os.path.exists(abs_filename):
-            break
-        else:
-            file_name = "eventlog_{}_{:02d}.csv".format(today, randint(1, 99))
+    abs_file_name, file_name = get_file_name(data_path, "csv")
     print("File: {}".format(file_name))
     print("Dumping data...")
     q = sql.SQL("""
@@ -110,7 +122,7 @@ def dump_data(connection, cursor, is_flush):
         ORDER BY id ASC
     """)
     cursor.execute(q, [days])
-    f = open(abs_filename, "w")
+    f = open(abs_file_name, "w")
     t = 0
     while True:
         df = pd.DataFrame(cursor.fetchmany(1000))
@@ -122,9 +134,15 @@ def dump_data(connection, cursor, is_flush):
     f.close()
     if t == 0:
         print("No data found, deleting file.")
-        os.remove(abs_filename)
+        os.remove(abs_file_name)
     else:
         print("Exported {} records.".format(t))
+        if is_zip:
+            print("Compressing data file...")
+            zip_abs_file_name, zip_file_name = get_file_name(data_path, "zip")
+            with ZipFile(zip_abs_file_name, "w") as zip:
+                zip.write(abs_file_name, file_name)
+            os.remove(abs_file_name)
         if is_flush:
             print("Flushing database...")
             q = sql.SQL("""
@@ -160,7 +178,7 @@ except Exception as e:
 cur = con.cursor(cursor_factory=RealDictCursor)
 
 if args.dump:
-    dump_data(con, cur, args.flush)
+    dump_data(con, cur, args.zip, args.flush)
     sys.exit(0)
 
 try:
