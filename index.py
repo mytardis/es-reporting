@@ -182,6 +182,9 @@ try:
 except Exception as e:
     sys.exit("Can't connect to the database - {}.".format(str(e)))
 
+print('--- database is ok: {}')
+
+
 cur = con.cursor(cursor_factory=RealDictCursor)
 
 if args.dump:
@@ -193,10 +196,17 @@ try:
         settings["elasticsearch"]["host"],
         settings["elasticsearch"]["port"]
     )
+
     es = Elasticsearch([es_host])
+    host = "http://{}:{}".format(settings["elasticsearch"]["host"], settings["elasticsearch"]["port"])
+    print('------ host : {}'.format(host))
+
+    es = Elasticsearch(host)
 except Exception as e:
     con.close()
     sys.exit("Can't connect to the Elasticsearch - {}.".format(str(e)))
+
+print('--- elastic connection is ok: {}')
 
 indexes_folder_name = "indexes"
 indexes_folder = os.path.join(
