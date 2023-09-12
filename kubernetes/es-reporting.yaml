@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-reporting
+  namespace: mytardis
+data:
+  settings.yaml: |
+    database:
+      host: pgbouncer.postgres
+      port: 5432
+      username: mytardis
+      password: k6cJ2KT7es35GzPj
+      database: postgres
+
+    elasticsearch:
+      host: elasticsearch7.mytardis
+      port: 9200
+    
+    index:
+      name: datafile
+      limit: 10000
+
+    dumpe:
+      path: /mnt/data
+      keep: 14
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: es-reporting-create
+  namespace: mytardis
+spec:
+  backoffLimit: 1
+  completions: 1
+  parallelism: 1
+  template:
+    spec:
+      containers:
+        - name: go
+          image: mytardis/es-reporting:latest
+          imagePullPolicy: Always
+          command:
+            - python
+            - index.py
+            - --rebuild
+            - --days=-1
+          volumeMounts:
+            - name: settings
+              mountPath: /app/settings.yaml
+              subPath: settings.yaml
+      restartPolicy: Never
+      volumes:
+        - name: settings
+          configMap:
+            name: es-reporting

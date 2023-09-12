@@ -15,7 +15,6 @@ from zipfile import ZipFile
 
 
 def get_parser():
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -73,7 +72,6 @@ def get_indexes(indexes_folder):
 
 
 def init_es_index(indexes_folder, index_name):
-
     index_settings_file = os.path.join(
         indexes_folder, "{}.json".format(index_name))
 
@@ -165,13 +163,22 @@ else:
     sys.exit("Can't find settings.")
 
 try:
-    con = connect(
-        host=settings["database"]["host"],
-        port=settings["database"]["port"],
-        user=settings["database"]["username"],
-        password=settings["database"]["password"],
-        database=settings["database"]["database"]
-    )
+    host = settings["database"]["host"]
+    port = settings["database"]["port"]
+    user = settings["database"]["username"]
+    password = settings["database"]["password"]
+    database = settings["database"]["database"]
+
+    print('--host: {} -- port: {} -- user: {} -- password: {} -- database: {}'.format(host, port, user, password,
+                                                                                      database))
+    #     con = connect(
+    #         host=settings["database"]["host"],
+    #         port=settings["database"]["port"],
+    #         user=settings["database"]["username"],
+    #         password=settings["database"]["password"],
+    #         database=settings["database"]["database"]
+    #     )
+    con = connect(host=host, port=port, user=user, password=password, database=database)
 except Exception as e:
     sys.exit("Can't connect to the database - {}.".format(str(e)))
 
@@ -201,6 +208,8 @@ if args.index == "*":
 else:
     indexes = [args.index]
 
+print('-----> indexes: {}'.format(indexes))
+
 for index_name in indexes:
 
     print("Index: {}.".format(index_name))
@@ -209,15 +218,15 @@ for index_name in indexes:
     batch = cfg["limit"]
 
     try:
-        module = importlib.import_module(
-            "{}.{}".format(indexes_folder_name, cfg["module"]))
+        module = importlib.import_module("{}.{}".format(indexes_folder_name, cfg["module"]))
+        print('module: {}'.format(module))
     except Exception as e:
         cur.close()
         con.close()
         sys.exit("Can't import module {} - {}.".format(index_name, str(e)))
 
     if args.rebuild:
-        print("Rebuild index.")
+        print("Rebuild index - {}".format(index_name))
         init_es_index(indexes_folder, index_name)
 
     start = 0

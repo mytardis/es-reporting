@@ -9,7 +9,7 @@ data:
     ---
     server.host: 0.0.0.0
     elasticsearch.hosts:
-    - http://elasticsearch.mytardis:9200
+    - http://elasticsearch7.mytardis:9200
 
 ---
 apiVersion: apps/v1
@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: kibana
-        image: docker.elastic.co/kibana/kibana-oss:7.1.0
+        image: docker.elastic.co/kibana/kibana:7.17.0
         resources:
           limits:
             cpu: 1000m
