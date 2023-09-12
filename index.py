@@ -197,11 +197,10 @@ try:
         settings["elasticsearch"]["port"]
     )
 
-    es = Elasticsearch([es_host])
-    host = "http://{}:{}".format(settings["elasticsearch"]["host"], settings["elasticsearch"]["port"])
-    print('------ host : {}'.format(host))
-
-    es = Elasticsearch(host)
+    # es = Elasticsearch([es_host])
+    es_host_url = "http://{}:{}".format(settings["elasticsearch"]["host"], settings["elasticsearch"]["port"])
+    print('------ host : {}'.format(es_host_url))
+    es = Elasticsearch(es_host_url)
 except Exception as e:
     con.close()
     sys.exit("Can't connect to the Elasticsearch - {}.".format(str(e)))
