@@ -6,15 +6,16 @@ metadata:
 data:
   settings.yaml: |
     database:
-      host: pgbouncer.postgres
+      host: local.postgres
       port: 5432
-      username: mytardis
-      password: k6cJ2KT7es35GzPj
-      database: postgres
+      username: dummy
+      password: dummy
+      database: dummy
 
     elasticsearch:
-      host: elasticsearch7.mytardis
+      host: local.elasticsearch
       port: 9200
+
     
     index:
       name: datafile
